@@ -11,7 +11,7 @@ log_level = log.INFO
 # PASSWORD
 default_password_size = 16
 
-attempts = 10
+attempts = 3
 
 letters_lower = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 letter_upper = [c.upper() for c in letters_lower]

