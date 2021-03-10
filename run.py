@@ -1,6 +1,5 @@
 import Utils
 
-
 difficulty = 0
 username = "curiey"
 
