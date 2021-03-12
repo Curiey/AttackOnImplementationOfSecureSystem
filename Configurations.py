@@ -6,10 +6,10 @@ result_path = "./results"
 
 # LOG
 write_to_console = True
-log_level = log.INFO
+log_level = log.DEBUG
 
 # PASSWORD
-attempts = 1
+attempts = 100
 default_password_size = 16
 default_character = "-"
 
