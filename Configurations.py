@@ -1,5 +1,9 @@
 import logging as log
+from threading import Lock
 
+mutex = Lock()
+
+password = ""
 
 # FILE
 result_path = "./results"
@@ -10,7 +14,7 @@ log_level = log.INFO
 
 # PASSWORD
 attempts = 1
-default_password_size = 16
+default_password_size = 7
 default_character = "-"
 
 letters_lower = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
@@ -25,4 +29,3 @@ max_of_threads = 1  # plus one is for 0 size
 
 # sleep time before sending a request to the server
 sleep_time = 0
-

