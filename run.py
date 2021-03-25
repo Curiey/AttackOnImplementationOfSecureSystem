@@ -1,7 +1,9 @@
 import Utils
 
-difficulty = 5
+difficulty = 1
+username = "adirbiran"
 username = "avivams"
+username = "curiey"
 
 start_url = f"http://aoi.ise.bgu.ac.il/?user={username}&password="
 end_url = f"&difficulty={difficulty}"

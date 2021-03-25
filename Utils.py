@@ -225,7 +225,7 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
         if Configurations.use_thread_pool:
             future_results.append(thread_pool.submit(check_password_size_thread, url_result_command, Configurations.attempts, i, logger))
         else:
-            res = check_password_size_thread(url_time_command, url_result_command, Configurations.attempts, i, logger)
+            res = check_password_size_thread(url_result_command, Configurations.attempts, i, logger)
             results[i] = res
 
     if Configurations.use_thread_pool:
@@ -296,7 +296,7 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
     """
 
     # password = "loohvrjtcblvniyq"   # aviv password - difficulty 1
-    # password = "loohvrjtcblvniy"
+    # password = "izxuwlxfktdnbaiv"   # yarden password - difficulty 1
     password = ""
 
     for i in range(password_size - len(password)):
@@ -333,7 +333,7 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
 
     # write_log(logger, log_level="debug", message=f"[crack password]: password found: {password}   .")
 
-    return password
+    return Configurations.password if Configurations.password != "" else None
 
 
 def timing_attack(start_url: str = "", end_url: str= "", password_size: int = Configurations.default_password_size) -> str:

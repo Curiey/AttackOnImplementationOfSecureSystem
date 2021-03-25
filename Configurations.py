@@ -25,8 +25,8 @@ signs = ['~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '+', '=', '
 characters = letters_lower
 
 # TREAD POOL EXECUTOR
-use_thread_pool = True
-max_of_threads = 2  # plus one is for 0 size
+use_thread_pool = False
+max_of_threads = 1  # plus one is for 0 size
 
 # sleep time before sending a request to the server
 sleep_time = 0
