@@ -1,12 +1,16 @@
 import logging as log
+from threading import Lock
 
+mutex = Lock()
+
+password = ""
 
 # FILE
 result_path = "./results"
 
 # LOG
 write_to_console = True
-log_level = log.DEBUG
+log_level = log.INFO
 
 # PASSWORD
 attempts = 100
@@ -25,4 +29,3 @@ max_of_threads = 1  # plus one is for 0 size
 
 # sleep time before sending a request to the server
 sleep_time = 0
-
