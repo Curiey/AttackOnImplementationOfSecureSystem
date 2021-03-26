@@ -32,7 +32,7 @@ use_thread_pool = False
 max_of_threads = 1  # plus one is for 0 size
 
 # sleep time before sending a request to the server
-sleep_time = 0
+sleep_time = 0.1
 
 # T-test
 alpha = 0.05
