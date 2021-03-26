@@ -270,10 +270,7 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
         # check distinct
         distinct = check_if_distinct(result_list)
 
-    password_length = max(results, key=results.get)
-    # write_log(logger, log_level="debug", message=f"[check_password_size]: password length is: {password_length}")
-
-    return password_length
+    return max_value_index
 
 
 def crack_password_thread(url_time_command, url_result_command, ch, current_password, iterations: int=1, logger=None):
@@ -318,7 +315,7 @@ def crack_password_thread(url_time_command, url_result_command, ch, current_pass
             if i + 1 == iterations:
                 write_log(logger, f"[crack password thread][{ch}][iteration {i}] result time: {total_iterations_time}  -  {url_result_command}")
 
-    return ch, total_iterations_time
+    return total_iterations_time
 
 
 def crack_password(password_size: int, start_url: str = "", end_url: str = "", logger=None) -> str:
@@ -384,16 +381,14 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
                     results[result[0]] = result[1]
 
             # check timing results
-            max_value_index = max(results, key=results.get)
+            max_char = max(results, key=results.get)
             result_list = list(results.values())
-            result_list.remove(results[max_value_index])
+            result_list.remove(results[max_char])
 
             # check distinct
             distinct = check_if_distinct(result_list)
 
-        max_time_char = max(results, key=results.get)
-
-        password += max_time_char
+        password += max_char
 
     return Configurations.password if Configurations.password != "" else None
 
