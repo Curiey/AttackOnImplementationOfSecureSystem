@@ -12,6 +12,7 @@ password = ""
 result_path = "./results"
 
 # LOG
+use_logger = False
 write_to_console = False
 log_level = log.INFO
 

