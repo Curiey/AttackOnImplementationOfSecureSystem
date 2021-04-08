@@ -1,5 +1,6 @@
 import os
 import requests
+import subprocess
 import logging as log
 from time import time
 import time as timer
@@ -154,7 +155,8 @@ def run_url(url: str, logger=None) -> float:
         # yarden
         command = url
         start = time()
-        os.system(command + ">/dev/null 2>&1")
+        # os.system(command + ">/dev/null 2>&1")
+        subprocess.check_output(command, shell=True)
         # os.system(url)
         time_pass = time() - start
 
@@ -162,7 +164,7 @@ def run_url(url: str, logger=None) -> float:
         # response = requests.get(url)
 
     except Exception as e:
-        write_log(logger, f"Exception {e.with_traceback()} was occur with trying to get {url}.")
+        write_log(logger, f"Exception {e} was occur with trying to get {url}.")
         time_pass = 0
 
     timer.sleep(Configurations.sleep_time)
@@ -206,7 +208,7 @@ def warmup() -> None:
 
     :return: None.
     """
-    url_time_command = f'curl -s -w "http://aoi.ise.bgu.ac.il/?user=test&password=test&difficulty=1"'
+    url_time_command = f'curl -s "http://aoi.ise.bgu.ac.il/?user=test&password=test&difficulty=1"'
     run_url(url_time_command)
 
 
@@ -257,7 +259,7 @@ def _get_url_params(start_url: str, end_url: str, password_length: int, password
         password = password + Configurations.default_character
 
     url = f'{start_url}{password}{end_url}'
-    url_result_command = f'curl -s -w "{url}"'
+    url_result_command = f'curl -s "{url}"'
     url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
         time_total='time_total', start_url=start_url, password=Configurations.default_character * password_length,
         end_url=end_url)
