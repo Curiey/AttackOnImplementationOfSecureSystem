@@ -4,20 +4,19 @@ from threading import Lock
 
 mutex = Lock()
 
-difficulty = 1
-
 password = ""
 
 # FILE
 result_path = "./results"
 
 # LOG
-use_logger = False
-write_to_console = False
+use_logger = True
+write_to_console = True
 log_level = log.INFO
 
 # PASSWORD
-attempts = 2
+password_size_attempt = 3
+attempts = 10
 default_password_size = 32
 default_character = "-"
 
@@ -30,10 +29,11 @@ characters = letters_lower
 
 # TREAD POOL EXECUTOR
 use_thread_pool = False
-max_of_threads = 1  # plus one is for 0 size
+max_of_threads = 4  # plus one is for 0 size
 
 # sleep time before sending a request to the server
-sleep_time = 0.1
+# sleep_time = 0.1
+sleep_time = 0
 
 # T-test
 alpha = 0.05

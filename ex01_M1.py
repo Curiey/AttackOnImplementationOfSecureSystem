@@ -1,11 +1,10 @@
 import sys
 import Utils
-import Configurations
 
 
-if len(sys.argv) == 2:
+if len(sys.argv) == 3:
 
-    difficulty = Configurations.difficulty
+    difficulty = sys.argv[2]
     username = sys.argv[1]
 
     start_url = f"http://aoi.ise.bgu.ac.il/?user={username}&password="
