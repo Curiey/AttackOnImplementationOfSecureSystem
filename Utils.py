@@ -1,4 +1,6 @@
 import os
+import sys
+
 import requests
 import subprocess
 import logging as log
@@ -314,7 +316,7 @@ def _check_password_size(start_url: str = "", end_url: str = "", max_password_si
     return results
 
 
-def _get_chosen_char(results: dict) -> tuple:
+def _get_chosen_char(results: list) -> tuple:
     """
     This function chose the best char by the result and return dict without it and the chosen item.
 
@@ -324,11 +326,10 @@ def _get_chosen_char(results: dict) -> tuple:
                 List. contain the given list without the chosen item.
                 Object. chosen item that has been chosen.
     """
-    max_value_index = max(results, key=results.get)
-    result_list = list(results.values())
-    result_list.remove(results[max_value_index])
+    max_value_index = results.index(max(results))
+    results.remove(results[max_value_index])
 
-    return result_list, max_value_index
+    return results, max_value_index
 
 
 def check_password_size(start_url: str = "", end_url: str = "", max_password_size: int = Configurations.default_password_size, logger=None) -> int:
@@ -347,11 +348,19 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
     distinct = False
     attempts = 0
 
-    while not distinct and attempts < Configurations.password_size_attempt:  # if result not distinct and attempt didnt reach to maximun according to configuration setup
+    # creating list of lists of all possible password sizes
+    minimal_results_attempts_list = [sys.maxsize for _ in range(Configurations.default_password_size + 1)]
+
+    while not distinct and attempts < Configurations.max_password_size_attempt:  # if result not distinct and attempt didnt reach to maximun according to configuration setup
         results_dict = _check_password_size(start_url, end_url, max_password_size, logger)
 
+        # add the time results of the current iteration attempt for each password length
+        for i in range(len(minimal_results_attempts_list)):
+            if minimal_results_attempts_list[i] > results_dict[i]:
+                minimal_results_attempts_list[i] = results_dict[i]
+
         # check timing results
-        results_list_without_chosen_char, chosen_char = _get_chosen_char(results_dict)
+        results_list_without_chosen_char, chosen_char = _get_chosen_char(minimal_results_attempts_list)
 
         # check distinct
         distinct = check_if_distinct(results_list_without_chosen_char)

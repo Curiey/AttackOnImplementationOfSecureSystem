@@ -15,7 +15,7 @@ write_to_console = True
 log_level = log.INFO
 
 # PASSWORD
-password_size_attempt = 3
+max_password_size_attempt = 3
 attempts = 1
 default_password_size = 32
 default_character = "-"
