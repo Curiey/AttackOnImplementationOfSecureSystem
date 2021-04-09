@@ -16,7 +16,7 @@ log_level = log.INFO
 
 # PASSWORD
 password_size_attempt = 3
-attempts = 10
+attempts = 1
 default_password_size = 32
 default_character = "-"
 
@@ -29,7 +29,7 @@ characters = letters_lower
 
 # TREAD POOL EXECUTOR
 use_thread_pool = False
-max_of_threads = 4  # plus one is for 0 size
+max_of_threads = 1  # plus one is for 0 size
 
 # sleep time before sending a request to the server
 # sleep_time = 0.1

