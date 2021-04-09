@@ -1,6 +1,6 @@
 import os
 import sys
-
+import scipy.stats as st
 import requests
 import subprocess
 import logging as log
@@ -222,20 +222,20 @@ def check_if_distinct(results: list) -> bool:
 
     :return: Boolean. True if distinct, false otherwise.
     """
-    # mu = 10
-    # sigma2 = 4
-    #
-    # vector_length = len(results)
-    #
-    # normal_data = np.random.normal(size=vector_length) * sigma2 + mu
-    #
-    # h, p = stats.ttest_ind(normal_data, results)
-    # if p > Configurations.alpha:
-    #     return False
-    # else:
-    #     return True
+    dist_name = "norm"
+    params = {}
 
-    return True
+    dist = getattr(st, dist_name)
+    param = dist.fit(results)
+
+    params[dist_name] = param
+    # Applying the Kolmogorov-Smirnov test
+    _, p = st.kstest(results, dist_name, args=param)
+
+    if p > Configurations.alpha:
+        return True
+    else:
+        return False
 
 
 def _get_url_params(start_url: str, end_url: str, password_length: int, password="", ch=None) -> tuple:
@@ -326,10 +326,11 @@ def _get_chosen_char(results: list) -> tuple:
                 List. contain the given list without the chosen item.
                 Object. chosen item that has been chosen.
     """
-    max_value_index = results.index(max(results))
-    results.remove(results[max_value_index])
+    max_value_index = max(results, key=results.get)
+    result_list = list(results.values())
+    result_list.remove(results[max_value_index])
 
-    return results, max_value_index
+    return result_list, max_value_index
 
 
 def check_password_size(start_url: str = "", end_url: str = "", max_password_size: int = Configurations.default_password_size, logger=None) -> int:
@@ -349,18 +350,18 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
     attempts = 0
 
     # creating list of lists of all possible password sizes
-    minimal_results_attempts_list = [sys.maxsize for _ in range(Configurations.default_password_size + 1)]
+    # minimal_results_attempts_list = [sys.maxsize for _ in range(Configurations.default_password_size + 1)]
 
     while not distinct and attempts < Configurations.max_password_size_attempt:  # if result not distinct and attempt didnt reach to maximun according to configuration setup
         results_dict = _check_password_size(start_url, end_url, max_password_size, logger)
 
         # add the time results of the current iteration attempt for each password length
-        for i in range(len(minimal_results_attempts_list)):
-            if minimal_results_attempts_list[i] > results_dict[i]:
-                minimal_results_attempts_list[i] = results_dict[i]
+        # for i in range(len(minimal_results_attempts_list)):
+        #     if minimal_results_attempts_list[i] > results_dict[i]:
+        #         minimal_results_attempts_list[i] = results_dict[i]
 
         # check timing results
-        results_list_without_chosen_char, chosen_char = _get_chosen_char(minimal_results_attempts_list)
+        results_list_without_chosen_char, chosen_char = _get_chosen_char(results_dict)
 
         # check distinct
         distinct = check_if_distinct(results_list_without_chosen_char)
@@ -426,7 +427,7 @@ def _check_last_char(start_url: str, end_url: str, password: str, password_size:
 
     for ch in Configurations.characters:
         if len(Configurations.password) == 0:
-            url_time_command, url_result_command, url, password = _get_url_params(start_url, end_url, password_size, password, ch)
+            url_time_command, url_result_command, url, current_password = _get_url_params(start_url, end_url, password_size, password, ch)
 
             future_results.append(
                 thread_pool.submit(
@@ -434,7 +435,7 @@ def _check_last_char(start_url: str, end_url: str, password: str, password_size:
                     url_time_command,
                     url_result_command,
                     ch,
-                    password,
+                    current_password,
                     1,
                     logger
                 )

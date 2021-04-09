@@ -1,8 +1,8 @@
 import sys
 import Utils
 
-levels = [i for i in range(10)]
-users = ['adirbir', 'avivams', 'curiey']
+levels = [i for i in range(1, 10)]
+users = ['avivams', 'curiey', 'adirbir']
 
 for lvl in levels:
     for usr in users:
