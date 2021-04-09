@@ -9,7 +9,9 @@ import time as timer
 import Configurations
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
+import requests
 
+REQUESTS_SESSION = requests.Session()
 
 # - - - - - - - - - -  LOG SECTION  - - - - - - - - - -
 
@@ -156,14 +158,18 @@ def run_url(url: str, logger=None) -> float:
 
         # yarden
         command = url
-        start = time()
+        #start = time()
         # os.system(command + ">/dev/null 2>&1")
-        subprocess.check_output(command, shell=True)
+        #subprocess.check_output(command, shell=True)
         # os.system(url)
-        time_pass = time() - start
+        #time_pass = time() - start
 
         # adir
-        # response = requests.get(url)
+        url = url[url.find("\"") + 1:url.rfind("\"")]
+
+        response = REQUESTS_SESSION.get(url)
+        time_pass = response.elapsed.total_seconds()
+
 
     except Exception as e:
         write_log(logger, f"Exception {e} was occur with trying to get {url}.")
@@ -261,10 +267,12 @@ def _get_url_params(start_url: str, end_url: str, password_length: int, password
         password = password + Configurations.default_character
 
     url = f'{start_url}{password}{end_url}'
+
     url_result_command = f'curl -s "{url}"'
     url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
         time_total='time_total', start_url=start_url, password=Configurations.default_character * password_length,
         end_url=end_url)
+
 
     return url_time_command, url_result_command, url, password
 
