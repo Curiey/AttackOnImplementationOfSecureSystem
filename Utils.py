@@ -288,6 +288,8 @@ def _check_password_size(start_url: str = "", end_url: str = "", max_password_si
 
     :return:
     """
+    thread_pool = None
+
     if Configurations.use_thread_pool:
         thread_pool = ThreadPoolExecutor(max_workers=Configurations.max_of_threads)
 
@@ -469,6 +471,8 @@ def _crack_password_step(start_url, end_url, password, password_size, logger) ->
     :return: Dictionary. dictionary containing all the result for each of the possible character.
                             the key will be character and the value will be the sum of time it take to request it URL.
     """
+    thread_pool = None
+
     if Configurations.use_thread_pool:
         thread_pool = ThreadPoolExecutor(max_workers=Configurations.max_of_threads)
 
