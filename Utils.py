@@ -15,14 +15,6 @@ REQUESTS_SESSION = requests.Session()
 
 # - - - - - - - - - -  LOG SECTION  - - - - - - - - - -
 
-def create_folder_if_not_exists(folder_path: str) -> str:
-    """
-    This function create a given folder if it doesnt exists.
-    :param folder_path: String. path to the given folder that need to be created.
-    """
-    if not os.path.exists(folder_path):
-        os.mkdir(folder_path)
-
 
 def set_logger(result_path: str, class_name: str, log_filename=None) -> log.Logger:
     """
@@ -65,9 +57,10 @@ def set_logger(result_path: str, class_name: str, log_filename=None) -> log.Logg
     return logger
 
 
-def get_current_date_and_time() -> datetime:
+def get_current_date_and_time() -> str:
     """
     This function return a current date and time in this representation DD-MM-YYYY HH:MM.
+
     :return: String, represent day and time.
     """
     return datetime.now().strftime('%d-%m-%Y %H-%M')
@@ -79,7 +72,7 @@ def get_session() -> None:
     """
     if Configurations.session is None:
         Configurations.session = Configurations.running_folder_format
-        create_folder_if_not_exists(os.path.join(Configurations.RESULTS_PATH, Configurations.session))
+        create_folder_if_not_exists(os.path.join(Configurations.result_path, Configurations.session))
 
     return Configurations.session
 
@@ -102,29 +95,6 @@ def write_log(logger, message: str, log_level="info", print_to_console=Configura
 
     if print_to_console:
         print(message)
-
-
-def set_logger(result_path: str, class_name: str, log_filename: str = None) -> log.Logger:
-    """
-    The function initial logger to documenting the RGB colors of the given pixel.
-
-    :param result_path.String. represent path to result folder.
-    :param class_name. String. class name of the logger.
-    :param log_filename.String. custom file name. if None is given, file name will be 'logfile_{current date and time}.log
-
-    :return: logger instance.
-    """
-    # Set up a specific logger with our desired output level
-    if log_filename is None:
-        log_filename = f'logfile_{get_current_date_and_time()}.log'
-
-    create_folder_if_not_exists(result_path)
-    create_folder_if_not_exists(os.path.join(result_path, class_name))
-
-    log.basicConfig(filename=os.path.join(result_path, class_name, log_filename), filemode='w', level=Configurations.log_level)
-    logger = log.getLogger('MyLogger')
-
-    return logger
 
 
 # - - - - - - - - - -  FILE SECTION  - - - - - - - - - -
@@ -326,9 +296,11 @@ def _check_password_size(start_url: str = "", end_url: str = "", max_password_si
     return results
 
 
-def _get_chosen_char(results: list) -> tuple:
+def _get_chosen_char(results: dict) -> tuple:
     """
-    This function chose the best char by the result and return dict without it and the chosen item.
+    This function chose the best char by the result and return tuple contain:
+                                                                    List. Given dict's values as a list without the chosen object.
+                                                                    Object. the chosen item.
 
     :param results: List. list with
 
@@ -406,7 +378,7 @@ def crack_password_thread(url_time_command, url_result_command, ch, current_pass
 
             write_log(logger, f"[crack password thread] Password is NOT: {current_password}")
 
-            return
+            return 0.0
 
         else:
             # yarden
@@ -578,18 +550,18 @@ def timing_attack(start_url: str = "", end_url: str = "", max_password_size: int
     if Configurations.use_logger:
         logger = set_logger(Configurations.result_path, "crack password")
     else:
-        logger = None
+        logger = ""
 
     size = check_password_size(start_url=start_url, end_url=end_url, max_password_size=max_password_size, logger=logger)
 
     if size is None:
-        return None
+        return ""
 
     write_log(logger, log_level="debug", message=f"[timing attack]: starting to lookup password in size {size}.")
 
     plaintext_password = crack_password(password_size=size, start_url=start_url, end_url=end_url, logger=logger)
 
     if plaintext_password is None:
-        return None
+        return ""
 
     return plaintext_password

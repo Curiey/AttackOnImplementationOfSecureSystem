@@ -1,6 +1,8 @@
-import logging as log
 import string
+import logging as log
 from threading import Lock
+from datetime import datetime
+
 
 mutex = Lock()
 
@@ -13,6 +15,8 @@ result_path = "./results"
 use_logger = True
 write_to_console = True
 log_level = log.INFO
+session = None
+running_folder_format = datetime.now().strftime("%m-%d-%Y---%H-%M-%S")
 
 # PASSWORD
 max_password_size_attempt = 3

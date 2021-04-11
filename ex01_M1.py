@@ -19,7 +19,7 @@ for lvl in levels:
 
             password = Utils.timing_attack(start_url=start_url, end_url=end_url)
 
-            if password:
+            if password and len(password) > 0:
                 print(f"[main][{usr}][{lvl}]: {password}")
 
         except Exception as e:
