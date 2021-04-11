@@ -24,6 +24,11 @@ attempts = 1
 default_password_size = 32
 default_character = "-"
 
+# ALPHA
+default_alpha = 0.05
+number_alpha = 0.05
+letter_alpha = 0.05
+
 letters_lower = list(string.ascii_lowercase)
 letter_upper = list(string.ascii_uppercase)
 numbers = list(string.digits)

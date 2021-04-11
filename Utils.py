@@ -190,7 +190,7 @@ def warmup() -> None:
     run_url(url_time_command)
 
 
-def check_if_distinct(results: list) -> bool:
+def check_if_distinct(results: list, alpha=Configurations.default_alpha) -> bool:
     """
     This function will check if the given list is distinct according to the normal distribution.
 
@@ -208,7 +208,7 @@ def check_if_distinct(results: list) -> bool:
     # Applying the Kolmogorov-Smirnov test
     _, p = st.kstest(results, dist_name, args=param)
 
-    if p > Configurations.alpha:
+    if p > alpha:
         return True
     else:
         return False
@@ -346,7 +346,7 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
         results_list_without_chosen_char, chosen_char = _get_chosen_char(results_dict)
 
         # check distinct
-        distinct = check_if_distinct(results_list_without_chosen_char)
+        distinct = check_if_distinct(results_list_without_chosen_char, Configurations.number_alpha)
 
         attempts = attempts + 1
 
@@ -519,7 +519,7 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
                 results_list_without_chosen_char, chosen_char = _get_chosen_char(results_dict)
 
                 # check distinct
-                distinct = check_if_distinct(results_list_without_chosen_char)
+                distinct = check_if_distinct(results_list_without_chosen_char, Configurations.letter_alpha)
 
             password += chosen_char
 
