@@ -13,14 +13,15 @@ result_path = "./results"
 
 # LOG
 use_logger = True
-write_to_console = True
+write_to_console = False
 log_level = log.INFO
 session = None
 running_folder_format = datetime.now().strftime("%m-%d-%Y---%H-%M-%S")
 
 # PASSWORD
 max_password_size_attempt = 3
-attempts = 1
+attempts = 5
+current_attempt = 0
 default_password_size = 32
 default_character = "-"
 

