@@ -12,8 +12,8 @@ password = ""
 result_path = "./results"
 
 # LOG
-use_logger = True
-write_to_console = True
+use_logger = False
+write_to_console = False
 log_level = log.INFO
 session = None
 running_folder_format = datetime.now().strftime("%m-%d-%Y---%H-%M-%S")

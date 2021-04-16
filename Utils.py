@@ -1,9 +1,6 @@
 import os
 import string
-import sys
 import scipy.stats as st
-import requests
-import subprocess
 import logging as log
 from time import time
 import time as timer
