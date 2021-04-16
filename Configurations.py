@@ -67,5 +67,11 @@ configuration_level_setup_dict = {
         "attempts": 7,
         "use_thread_pool": False,
         "max_of_threads": 10
+    },
+    4: {
+        "max_password_size_attempt": 5,
+        "attempts": 10,
+        "use_thread_pool": False,
+        "max_of_threads": 10
     }
 }

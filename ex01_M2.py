@@ -4,16 +4,15 @@ import Utils
 
 difficulty = sys.argv[2]
 username = sys.argv[1]
-try:
 
-    start_url = f"http://aoi.ise.bgu.ac.il/?user={username}&password="
-    end_url = f"&difficulty={difficulty}"
 
-    Utils.configure_level(difficulty)
-    password = Utils.timing_attack(start_url=start_url, end_url=end_url)
+start_url = f"http://aoi.ise.bgu.ac.il/?user={username}&password="
+end_url = f"&difficulty={difficulty}"
 
-    if password and len(password) > 0:
-        print(f"[main][{username}][{difficulty}]: {password}")
+Utils.configure_level(difficulty)
+password = Utils.timing_attack(start_url=start_url, end_url=end_url)
 
-except Exception as e:
-    print(e)
+if password and len(password) > 0:
+    print(f"[main][{username}][{difficulty}]: {password}")
+
+

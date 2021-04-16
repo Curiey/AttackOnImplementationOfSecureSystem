@@ -112,7 +112,7 @@ def create_folder_if_not_exists(folder_path: str) -> None:
 # - - - - - - - - - -  CONFIGURATION SECTION  - - - - - - - - - -
 
 
-def configure_level(lvl: int) -> None:
+def configure_level(lvl: str) -> None:
     """
     setup the code configuration according to the level.
 
@@ -356,14 +356,12 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
             chosen_result_all_password_size[i] = min(all_results_attempts_list[i])
 
         chosen_password_size = max(chosen_result_all_password_size, key=chosen_result_all_password_size.get)
-        print(f"[check_password_size][attempt {i}]chosen_password_size: {chosen_password_size}")
 
     chosen_result_all_password_size = {}
     for i in range(Configurations.default_password_size):
         chosen_result_all_password_size[i] = min(all_results_attempts_list[i])
 
     chosen_password_size = max(chosen_result_all_password_size, key=chosen_result_all_password_size.get)
-    print(chosen_password_size)
 
     return chosen_password_size
 
