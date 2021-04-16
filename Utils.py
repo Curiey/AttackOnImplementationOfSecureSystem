@@ -140,25 +140,9 @@ def run_url(url: str, logger=None) -> float:
     :return: float. total time in second.
     """
     try:
-        # aviv
         start = time()
         requests.get(url[9:len(url) - 1])
         time_pass = time() - start
-
-        # yarden
-        # command = url
-        # start = time()
-        # os.system(command + ">/dev/null 2>&1")
-        # subprocess.check_output(command, shell=True)
-        # os.system(url)
-        # time_pass = time() - start
-
-        # adir
-        # url = url[url.find("\"") + 1:url.rfind("\"")]
-        # timer.sleep(1)
-        # response = REQUESTS_SESSION.get(url)
-        # time_pass = response.elapsed.total_seconds()
-
 
     except Exception as e:
         write_log(logger, f"Exception {e} was occur with trying to get {url}.")
@@ -167,7 +151,6 @@ def run_url(url: str, logger=None) -> float:
     timer.sleep(Configurations.sleep_time)
 
     return time_pass
-    # return response.elapsed.total_seconds()
 
 
 def check_password_size_thread(url_result_command: str, iterations: int, thread_number: int, logger) -> float:
