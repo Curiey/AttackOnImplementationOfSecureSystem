@@ -1,10 +1,7 @@
 import string
 import logging as log
-from threading import Lock
 from datetime import datetime
 
-
-mutex = Lock()
 
 password = ""
 
@@ -12,8 +9,8 @@ password = ""
 result_path = "./results"
 
 # LOG
-use_logger = False
-write_to_console = False
+use_logger = True
+write_to_console = True
 log_level = log.INFO
 session = None
 running_folder_format = datetime.now().strftime("%m-%d-%Y---%H-%M-%S")
@@ -33,7 +30,6 @@ letter_alpha = 0.05
 letters_lower = list(string.ascii_lowercase)
 letter_upper = list(string.ascii_uppercase)
 numbers = list(string.digits)
-signs = ['~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '+', '=', '\\', '|', "{", "}", ";", ":", "<", ">", "?", "'"]
 
 characters = letters_lower
 
@@ -42,7 +38,6 @@ use_thread_pool = True
 max_of_threads = 1  # plus one is for 0 size
 
 # sleep time before sending a request to the server
-# sleep_time = 0.1
 sleep_time = 0
 
 # T-test
@@ -71,6 +66,18 @@ configuration_level_setup_dict = {
     4: {
         "max_password_size_attempt": 5,
         "attempts": 10,
+        "use_thread_pool": False,
+        "max_of_threads": 10
+    },
+    5: {
+        "max_password_size_attempt": 3,
+        "attempts": 5,
+        "use_thread_pool": False,
+        "max_of_threads": 10
+    },
+    6: {
+        "max_password_size_attempt": 3,
+        "attempts": 5,
         "use_thread_pool": False,
         "max_of_threads": 10
     }

