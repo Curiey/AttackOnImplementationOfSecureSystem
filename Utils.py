@@ -49,11 +49,11 @@ def set_logger(result_path: str, class_name: str, log_filename=None) -> log.Logg
     log.basicConfig(filename=os.path.join(result_path, class_name, log_filename), filemode='w', level=Configurations.log_level)
     logger = log.getLogger('MyLogger')
     formatter = MyFormatter(fmt='%(asctime)s %(message)s', datefmt='%Y-%m-%d,%H:%M:%S.%f')
-    handler = log.StreamHandler()
-    handler.setLevel(Configurations.log_level)
-    handler.setFormatter(formatter)
-
-    logger.addHandler(handler)
+    # handler = log.StreamHandler()
+    # handler.setLevel(Configurations.log_level)
+    # handler.setFormatter(formatter)
+    #
+    # logger.addHandler(handler)
 
     return logger
 
@@ -110,6 +110,25 @@ def create_folder_if_not_exists(folder_path: str) -> None:
     """
     if not os.path.exists(folder_path):
         os.mkdir(folder_path)
+
+
+# - - - - - - - - - -  CONFIGURATION SECTION  - - - - - - - - - -
+
+
+def configure_level(lvl: int) -> None:
+    """
+    setup the code configuration according to the level.
+
+    :param lvl: Int. level number.
+
+    :return: None.
+    """
+    lvl_dict = Configurations.configuration_level_setup_dict[int(lvl)]
+
+    Configurations.max_password_size_attempt = lvl_dict['max_password_size_attempt']
+    Configurations.attempts = lvl_dict['attempts']
+    Configurations.use_thread_pool = lvl_dict['use_thread_pool']
+    Configurations.max_of_threads = lvl_dict['max_of_threads']
 
 
 # - - - - - - - - - -  PASSWORD SECTION  - - - - - - - - - -
@@ -327,13 +346,20 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
     # list of lists. represent in each cell a list of all the attempts for a given password length
     all_results_attempts_list = [[] for _ in range(Configurations.default_password_size + 1)]
 
-    for _ in range(Configurations.max_password_size_attempt):  # if attempt didnt reach to maximun according to configuration setup
+    for i in range(Configurations.max_password_size_attempt):  # if attempt didnt reach to maximun according to configuration setup
         Configurations.current_attempt += 1
         results_dict = _check_password_size(start_url, end_url, max_password_size, logger)
 
         for i in range(Configurations.default_password_size):
             all_results_attempts_list[i].append(results_dict[i])
 
+        # yarden added to check level dictionary
+        chosen_result_all_password_size = {}
+        for i in range(Configurations.default_password_size):
+            chosen_result_all_password_size[i] = min(all_results_attempts_list[i])
+
+        chosen_password_size = max(chosen_result_all_password_size, key=chosen_result_all_password_size.get)
+        print(f"[check_password_size][attempt {i}]chosen_password_size: {chosen_password_size}")
 
     chosen_result_all_password_size = {}
     for i in range(Configurations.default_password_size):
@@ -341,6 +367,7 @@ def check_password_size(start_url: str = "", end_url: str = "", max_password_siz
 
     chosen_password_size = max(chosen_result_all_password_size, key=chosen_result_all_password_size.get)
     print(chosen_password_size)
+
     return chosen_password_size
 
 
@@ -390,7 +417,7 @@ def _check_last_char(start_url: str, end_url: str, password: str, password_size:
     """
     future_results = []  # result for the thread pool
 
-    thread_pool = ThreadPoolExecutor(max_workers=Configurations.max_of_threads)
+    thread_pool = ThreadPoolExecutor(max_workers=len(Configurations.characters))
 
     for ch in Configurations.characters:
         if len(Configurations.password) == 0:
@@ -486,11 +513,9 @@ def crack_password(password_size: int, start_url: str = "", end_url: str = "", l
 
     password = ""
 
-    # for i in range(password_size - len(password)):  # iterate all password by length
     for i in range(password_size):  # iterate all password by length
 
 
-        # if i == password_size - len(password):  # last iteration
         if len(password) + 1 == password_size:  # last iteration
             _check_last_char(start_url, end_url, password, password_size, logger)
 
