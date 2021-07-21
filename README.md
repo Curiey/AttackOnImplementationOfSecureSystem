@@ -13,7 +13,7 @@
 	<br>
 	<p>
 	This program is used to crack user's password by using a timing attack, including different difficulties.<br>
-	The program se different password length to figure out password size.<br>
+	The program use different password length to figure out password size.<br>
 	After discovering the password size the program try to reveal each password index character by using all 26 under-case letters (for our case).<br><br>
 	The program include:
 	<ul>
